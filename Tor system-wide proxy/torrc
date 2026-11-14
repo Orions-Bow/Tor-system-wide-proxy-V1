@@ -1,0 +1,14 @@
+# Tor SOCKS proxy - applications connect through this
+SOCKSPort 9050
+# Tor control port - used by tor-control to send commands (password-protected)
+ControlPort 9051
+# NOTE: no DNSPort. Port 5353 is reserved for mDNS on Windows and fails to bind
+# (WSAEACCES), which makes Tor exit. DNS is not needed: the HTTP bridge passes
+# hostnames to Tor unresolved, so Tor performs the DNS lookups itself.
+# GeoIP data files (fetched by scripts/fetch-vendor.ps1 from the Tor bundle)
+GeoIPFile ./vendor/tor-bundle/geoip
+GeoIPv6File ./vendor/tor-bundle/geoip6
+# Avoid writing to disk for extra privacy
+AvoidDiskWrites 1
+# Data directory - self-contained in project folder
+DataDirectory ./tor-data

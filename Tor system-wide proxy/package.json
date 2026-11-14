@@ -1,0 +1,26 @@
+{
+  "name": "tor-system-wide-proxy-windows",
+  "version": "1.0.0",
+  "description": "Route Windows system-proxy traffic through Tor: local Tor SOCKS5 proxy with a built-in HTTP-to-SOCKS5 bridge, interactive menu and CLI.",
+  "main": "run.js",
+  "scripts": {
+    "start": "node run.js",
+    "help": "node run.js help",
+    "setup": "powershell -ExecutionPolicy Bypass -File scripts/fetch-vendor.ps1"
+  },
+  "keywords": [
+    "tor",
+    "proxy",
+    "socks5",
+    "windows",
+    "privacy"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "cli-color": "^2.0.0",
+    "tor-control": "0.0.3"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "tor-system-wide-proxy-macos",
+  "version": "1.0.0",
+  "description": "Route macOS system-proxy traffic through Tor: local Tor SOCKS5 proxy plus per-service networksetup configuration, with an interactive menu and CLI.",
+  "main": "run.js",
+  "scripts": {
+    "start": "node run.js",
+    "help": "node run.js help"
+  },
+  "keywords": [
+    "tor",
+    "proxy",
+    "socks5",
+    "macos",
+    "networksetup",
+    "privacy"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "cli-color": "^2.0.0",
+    "tor-control": "0.0.3"
+  }
+}

@@ -1,0 +1,11 @@
+# Tor SOCKS proxy - applications connect through this
+SOCKSPort 9050
+# Tor control port - used by tor-control to send commands
+ControlPort 9051
+# NOTE: no DNSPort. Port 5353 is owned by mDNSResponder on macOS and would fail
+# to bind, which makes Tor exit. Apps using the SOCKS proxy send hostnames to Tor,
+# so Tor performs the DNS lookups itself.
+# Avoid writing to disk for extra privacy
+AvoidDiskWrites 1
+# Keep tor's data self-contained inside this project folder
+DataDirectory ./tor-data

@@ -1,0 +1,14 @@
+# Generated Tor runtime data — contains the control password, keys and state.
+# NEVER commit this directory.
+tor-data/
+
+# Dependencies are installed from package.json / package-lock.json
+node_modules/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*

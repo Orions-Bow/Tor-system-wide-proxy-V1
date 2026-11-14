@@ -1,0 +1,158 @@
+# Tor System-Wide Proxy (Windows)
+
+Routes **Windows system-proxy traffic** through the Tor anonymity network by running a local Tor SOCKS5 proxy (with a built-in HTTP-to-SOCKS5 bridge) and configuring the Windows system proxy to use it.
+
+> **Scope:** this changes the Windows *system proxy* (HKCU Internet Settings). Apps that respect the system proxy — Edge, Chrome, and most apps — are routed through Tor. Apps that bypass it (some games, VPN clients, custom network stacks) are **not** covered; this is not a VPN and does not capture all system traffic.
+
+## Setup
+
+Vendored binaries and `node_modules` are **not committed** to git. After cloning:
+
+```bat
+REM 1. Download Node.js runtime + Tor bundle into vendor\ (SHA256-verified)
+powershell -ExecutionPolicy Bypass -File scripts\fetch-vendor.ps1
+
+REM 2. Install Node dependencies (declared in package.json)
+npm install
+```
+
+Sources (with SHA256 hashes embedded in the fetch script):
+- **Node.js** v24.22.2 (win-x64): `https://nodejs.org/dist/v24.22.2/node-v24.22.2-win-x64.zip`
+- **Tor** 0.4.5.7 (win32): `https://archive.torproject.org/tor-package-archive/torbrowser/10.0.15/tor-win32-0.4.5.7.zip`
+
+## Quick Start
+
+1. **Double-click `run.bat`** — no admin rights needed (HKCU registry writes are per-user).
+2. Press **`1`** to start the Tor connection and wait for `100%` bootstrap.
+3. Press **`7`** to enable system-wide proxy — all Windows HTTP/HTTPS traffic now routes through Tor.
+4. Press **`8`** to disable it when done. Press **`3`** to shut down Tor.
+
+---
+
+## Interactive Menu
+
+Running with no arguments opens an interactive menu:
+
+```
+----------------- TOR System-Wide Proxy Menu ----------------
+
+ 1.   Start TOR connection
+ 2.   Log connection info
+ 3.   Stop TOR connection
+ 4.   Debug TOR connection
+ 5.   New TOR identity
+ 6.   Restart TOR connection
+
+ 7.   ENABLE system-wide proxy  (route all Windows traffic through Tor)
+ 8.   DISABLE system-wide proxy (restore direct connection)
+ 9.   Show system proxy status
+--------------------------------------------------------------
+```
+
+Press the number to run the command. Press `Ctrl+C` to exit (auto-disables system proxy on exit).
+
+---
+
+## CLI (Command-Line) Mode
+
+All commands are also available non-interactively from a terminal or script:
+
+```
+run.bat [command]
+```
+
+### Tor connection commands
+
+| Command           | Aliases               | Description                                           |
+|-------------------|-----------------------|-------------------------------------------------------|
+| `start`           | —                     | Start Tor SOCKS5 proxy and stay attached (Ctrl+C to stop) |
+| `stop`            | —                     | Shut down the running Tor process                     |
+| `restart`         | —                     | Stop and then re-start Tor                            |
+| `newnym`          | `new`, `new-identity` | Request clean circuits (new IP / identity)            |
+| `logs`            | `log`                 | Dump Tor log information to the console               |
+| `debug`           | —                     | Send DEBUG signal to Tor                              |
+
+### System-wide proxy commands
+
+| Command           | Aliases         | Description                                          |
+|-------------------|-----------------|------------------------------------------------------|
+| `proxy-on`        | —               | Set Windows system proxy → `http=127.0.0.1:8118`  |
+| `proxy-off`       | —               | Restore the proxy settings saved before `proxy-on` |
+| `status`          | `proxy-status`  | Show current proxy state from registry               |
+
+### Utility
+
+| Command           | Aliases              | Description          |
+|-------------------|----------------------|----------------------|
+| `help`            | `--help`, `-h`       | Print this reference |
+| *(no args)*       | —                    | Launch interactive menu |
+
+### Examples
+
+```batch
+REM Start Tor in the background, enable system proxy, then verify status
+run.bat start
+run.bat proxy-on
+run.bat status
+
+REM Rotate to a new exit node
+run.bat newnym
+
+REM Stop everything
+run.bat proxy-off
+run.bat stop
+```
+
+> **Tip:** Commands that talk to the Tor control port (`stop`, `newnym`, `logs`, `debug`) require Tor to already be running.
+
+---
+
+## How System-Wide Proxy Works
+
+Windows' system proxy cannot talk SOCKS directly, so this tool includes a small built-in **HTTP -> SOCKS5 bridge**:
+
+```
+App -> Windows proxy 127.0.0.1:8118 (bridge, started with Tor) -> Tor SOCKS5 127.0.0.1:9050 -> Tor network
+```
+
+When you enable the system-wide proxy (option `7` or `run.bat proxy-on`), the tool writes to the Windows registry:
+
+```
+HKCU\Software\Microsoft\Windows\CurrentVersion\Internet Settings
+  ProxyEnable   = 1
+  ProxyServer   = http=127.0.0.1:8118;https=127.0.0.1:8118
+  ProxyOverride = <local>
+```
+
+Hostnames are handed to Tor unresolved, so DNS is resolved by Tor (no DNS leaks for proxied traffic).
+
+**Settings are backed up and restored:** before changing anything, the current `ProxyEnable`/`ProxyServer`/`ProxyOverride` values are saved to `tor-data/proxy-backup.json` (gitignored). `proxy-off` **restores those saved values** rather than just switching the proxy off — a pre-existing corporate or manual proxy is put back. The backup is also restored automatically if Tor dies or the tool exits while the proxy is enabled.
+
+**Safety check:** the proxy refuses to enable unless Tor (port 9050) and the bridge (port 8118) are actually listening. This prevents the "all websites stop working" situation caused by pointing Windows at a proxy that isn't running.
+
+**Important:** the bridge runs inside the `start` process, so keep the window that ran `start` (or the interactive menu) open while the proxy is enabled. Because `proxy-on` needs the bridge, run it from the interactive menu (option 7) or from a second window while `start` is running.
+
+You may need to restart open applications for changes to take effect.
+
+## Tor Ports
+
+| Port  | Purpose                          |
+|-------|----------------------------------|
+| 8118  | HTTP bridge — Windows system proxy points here |
+| 9050  | SOCKS5 proxy — the bridge connects here |
+| 9051  | Control port — internal commands |
+
+DNS is resolved by Tor itself (hostnames are passed through unresolved), so no separate DNS port is used.
+
+## Notes
+
+- **No admin rights** required — system proxy changes are in `HKCU` (per-user).
+- **Control port is password-protected** — a random password is generated on each `start` and stored in `tor-data/control-password.txt`.
+- `AvoidDiskWrites 1` is set in `torrc` for extra privacy.
+- `tor-data/` is **gitignored** — it contains the control password, proxy backup and Tor runtime state and must never be committed.
+- Always disable the system proxy (`proxy-off`) before stopping Tor, or traffic will fail.
+- Exiting with `Ctrl+C` restores the saved proxy settings.
+
+## License
+
+MIT — see [LICENSE](LICENSE).

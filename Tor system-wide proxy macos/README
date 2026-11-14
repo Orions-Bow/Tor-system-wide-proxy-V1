@@ -1,0 +1,137 @@
+# Tor System-Wide Proxy (macOS)
+
+Routes **macOS system-proxy traffic** through the Tor anonymity network by running a local Tor SOCKS5 proxy and configuring every active network service to use it via `networksetup`.
+
+> **Scope:** this changes the macOS *system proxy* (the same setting as System Settings → Wi-Fi → Details → Proxies → SOCKS proxy). Apps that respect the system proxy — Safari, Chrome, curl, and most apps — are routed through Tor. Apps that bypass the system proxy (some games, VPN clients, custom network stacks) are **not** covered; this is not a VPN and does not capture all system traffic.
+
+## Prerequisites
+
+Install via [Homebrew](https://brew.sh):
+
+```bash
+brew install tor
+brew install node
+```
+
+Then install the Node dependencies (declared in `package.json`, locked in `package-lock.json`; `node_modules` is not committed):
+
+```bash
+npm install
+```
+
+## Quick Start
+
+1. Make the launcher executable: `chmod +x run.sh`
+2. Run `./run.sh` as your **normal user** (do not use sudo for the launcher itself).
+3. Press **`1`** to start the Tor connection and wait for `100%` bootstrap.
+4. Run `sudo -v` once (caches admin credentials), then press **`7`** to enable the system-wide proxy — all macOS HTTP/HTTPS traffic now routes through Tor.
+5. Press **`8`** to disable it when done. Press **`3`** to shut down Tor.
+
+---
+
+## Interactive Menu
+
+Running with no arguments opens an interactive menu:
+
+```
+----------------- TOR System-Wide Proxy Menu ----------------
+
+ 1.   Start TOR connection
+ 2.   Log connection info
+ 3.   Stop TOR connection
+ 4.   Debug TOR connection
+ 5.   New TOR identity
+ 6.   Restart TOR connection
+
+ 7.   ENABLE system-wide proxy  (route all macOS traffic through Tor)
+ 8.   DISABLE system-wide proxy (restore direct connection)
+ 9.   Show system proxy status
+--------------------------------------------------------------
+```
+
+Press the number to run the command. Press `Ctrl+C` to exit (auto-disables system proxy on exit).
+
+---
+
+## CLI (Command-Line) Mode
+
+All commands are also available non-interactively:
+
+```
+./run.sh [command]
+```
+
+### Tor connection commands
+
+| Command           | Aliases               | Description                                               |
+|-------------------|-----------------------|-----------------------------------------------------------|
+| `start`           | —                     | Start Tor SOCKS5 proxy and stay attached (Ctrl+C to stop) |
+| `stop`            | —                     | Shut down the running Tor process                         |
+| `restart`         | —                     | Stop and then re-start Tor                                |
+| `newnym`          | `new`, `new-identity` | Request clean circuits (new IP / identity)                |
+| `logs`            | `log`                 | Dump Tor log information to the console                   |
+| `debug`           | —                     | Send DEBUG signal to Tor                                  |
+
+### System-wide proxy commands
+
+| Command           | Aliases         | Description                                       |
+|-------------------|-----------------|---------------------------------------------------|
+| `proxy-on`        | —               | Set SOCKS proxy `127.0.0.1:9050` on all services  |
+| `proxy-off`       | —               | Restore the proxy settings saved before `proxy-on` |
+| `status`          | `proxy-status`  | Show current proxy state                          |
+
+### Utility
+
+| Command           | Aliases              | Description          |
+|-------------------|----------------------|----------------------|
+| `help`            | `--help`, `-h`       | Print this reference |
+| *(no args)*       | —                    | Launch interactive menu |
+
+### Examples
+
+```bash
+./run.sh start        # start Tor (keep this terminal open)
+./run.sh proxy-on     # route system traffic through Tor
+./run.sh status       # verify
+./run.sh newnym       # rotate to a new exit node
+./run.sh proxy-off    # restore your previous proxy settings
+./run.sh stop         # shut down Tor
+```
+
+> **Tip:** Commands that talk to the Tor control port (`stop`, `newnym`, `logs`, `debug`) require Tor to already be running.
+
+---
+
+## How System-Wide Proxy Works
+
+When you enable the proxy (option `7` or `./run.sh proxy-on`), the tool runs for every active network service (Wi-Fi, Ethernet, etc.):
+
+```bash
+networksetup -setsocksfirewallproxy "Wi-Fi" 127.0.0.1 9050
+networksetup -setsocksfirewallproxystate "Wi-Fi" on
+```
+
+This is the same setting as **System Settings → Wi-Fi → Details → Proxies → SOCKS proxy**. Most apps (Safari, Chrome, curl, etc.) respect it.
+
+Before changing anything, the current SOCKS settings of each service are saved to `tor-data/system-proxy-backup.json` (gitignored). `proxy-off` **restores those saved settings** rather than just switching the proxy off — so a pre-existing corporate or manual proxy is put back. The backup is also restored automatically if Tor dies or the tool exits while the proxy is enabled.
+
+## Tor Ports
+
+| Port  | Purpose                          |
+|-------|----------------------------------|
+| 9050  | SOCKS5 proxy — apps connect here |
+| 9051  | Control port — internal commands |
+
+DNS is resolved by Tor itself (hostnames are passed through unresolved), so no separate DNS port is used.
+
+## Notes
+
+- **Admin rights** are needed only for the `networksetup` proxy changes, which run individually via `sudo -n` — the main process never runs as root. Run `sudo -v` once before `proxy-on`/`proxy-off` to cache credentials (if they expire, re-run `sudo -v`).
+- **Control port is password-protected** — a random password is generated on each `start` and stored in `tor-data/control-password.txt` (mode 0600).
+- `tor` is auto-detected via `$TOR_BIN`, `/opt/homebrew/bin/tor` (Apple Silicon), `/usr/local/bin/tor` (Intel), then `PATH`.
+- Tor data is kept self-contained in `./tor-data` (see `torrc`) and is **gitignored** — it contains the control password and Tor runtime state and must never be committed.
+- Always disable the system proxy (`proxy-off`) before stopping Tor, or traffic will fail. If Tor stops unexpectedly while the proxy is on, the tool restores the saved settings automatically. If the whole process is killed hard, run `./run.sh proxy-off` to restore connectivity.
+
+## License
+
+MIT — see [LICENSE](LICENSE).
