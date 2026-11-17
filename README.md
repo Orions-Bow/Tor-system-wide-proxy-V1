@@ -65,8 +65,8 @@ Get the latest build from the [Releases page](https://github.com/Orions-Bow/Tor-
 
 Unzip it, then follow the Quick start steps below. Prefer to build from source? Clone the repository instead.
 
-> **Release builds** already include `node_modules`, so you can skip `npm install`.
-> Windows: also skip `fetch-vendor.ps1`.
+> **Release builds** already include `node_modules`, but you still need to run `npm install`. Ensure you have node as part of the system path.
+> Windows: skip `fetch-vendor.ps1`.
 > macOS: you still need Tor and Node installed (`brew install tor node`).
 > Building from source? Run the full Quick start below.
 
@@ -76,7 +76,6 @@ Unzip it, then follow the Quick start steps below. Prefer to build from source? 
 
 ```bat
 cd "Tor system-wide proxy"
-powershell -ExecutionPolicy Bypass -File scripts\fetch-vendor.ps1
 npm install
 run.bat
 ```
