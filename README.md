@@ -83,6 +83,8 @@ run.bat
 
 Press **1** (start Tor), wait for `100%`, press **7** (enable proxy). Press **8** to restore your previous settings, **3** to stop Tor.
 
+If `run.bat` reports that the system cannot find the path specified, confirm `vendor\nodejs\node.exe` exists. Re-run `scripts\fetch-vendor.ps1` and `npm install` from the Windows project folder if needed.
+
 ### macOS
 
 ```bash

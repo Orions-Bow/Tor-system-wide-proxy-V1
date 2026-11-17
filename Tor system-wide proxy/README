@@ -29,6 +29,8 @@ Sources (with SHA256 hashes embedded in the fetch script):
 3. Press **`7`** to enable system-wide proxy — all Windows HTTP/HTTPS traffic now routes through Tor.
 4. Press **`8`** to disable it when done. Press **`3`** to shut down Tor.
 
+If startup reports that the system cannot find the path specified, the bundled Node.js runtime may be missing. Run `powershell -ExecutionPolicy Bypass -File scripts\fetch-vendor.ps1` from this folder, then run `npm install`.
+
 ---
 
 ## Interactive Menu
