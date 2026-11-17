@@ -3,6 +3,7 @@
 #
 # Usage:  powershell -ExecutionPolicy Bypass -File scripts/fetch-vendor.ps1
 # Run from the project root (or anywhere — paths resolve to the script's repo).
+# Safe to re-run: upgrades the vendored binaries in place.
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
@@ -11,8 +12,12 @@ $nodeZipName = "node-$nodeVersion-win-x64.zip"
 $nodeUrl = "https://nodejs.org/dist/$nodeVersion/$nodeZipName"
 $nodeSha256 = 'ca1bff5d8ead13c9f2ea404a176db46bd430704d5b5113734049fa365e7799e2'
 
-$torUrl = 'https://archive.torproject.org/tor-package-archive/torbrowser/10.0.15/tor-win32-0.4.5.7.zip'
-$torSha256 = '0f3a038dc1a422c4824c57933889ea7624e4cdd05b3715fc8b310d90110dd567'
+# Tor expert bundle (Tor Browser 16.0.1, windows-x86_64).
+# Older "tor-win32-*.zip" bundles are deprecated; current releases are .tar.gz.
+$torVersion = '16.0.1'
+$torFileName = "tor-expert-bundle-windows-x86_64-$torVersion.tar.gz"
+$torUrl = "https://dist.torproject.org/torbrowser/$torVersion/$torFileName"
+$torSha256 = '9eed3c3ff1fe43df034ce360196c9ec95472560d77ff55614d0cd5120edea27b'
 
 $tmp = Join-Path $env:TEMP ('tor-proxy-vendor-' + [guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Force $tmp | Out-Null
@@ -42,23 +47,33 @@ try {
     $zip.Dispose()
     Write-Host "  node.exe -> $nodeDir"
 
-    # ---------- Tor bundle ----------
-    $torZip = Join-Path $tmp 'tor.zip'
-    Get-VerifiedZip $torUrl $torSha256 $torZip
+    # ---------- Tor expert bundle (tar.gz) ----------
+    $torTar = Join-Path $tmp 'tor.tar.gz'
+    Get-VerifiedZip $torUrl $torSha256 $torTar
+
+    $torExtract = Join-Path $tmp 'tor-extract'
+    New-Item -ItemType Directory -Force $torExtract | Out-Null
+    $tarExe = Join-Path $env:SystemRoot 'System32\tar.exe'   # bsdtar ships with Windows 10+
+    if (-not (Test-Path $tarExe)) { $tarExe = 'tar.exe' }
+    & $tarExe -xzf $torTar -C $torExtract
+    if ($LASTEXITCODE -ne 0) { throw "tar extraction failed with exit code $LASTEXITCODE" }
+
+    # Clean the old bundle so no stale DLLs (e.g. OpenSSL 1.1) linger
     $torDir = Join-Path $root 'vendor\tor-bundle'
+    if (Test-Path $torDir) { Remove-Item -Recurse -Force $torDir }
     New-Item -ItemType Directory -Force $torDir | Out-Null
-    $zip = [System.IO.Compression.ZipFile]::OpenRead($torZip)
-    foreach ($e in $zip.Entries) {
-        if ($e.FullName -like 'Tor/*' -and $e.Name) {
-            [System.IO.Compression.ZipFileExtensions]::ExtractToFile($e, (Join-Path $torDir $e.Name), $true)
-        }
-        # GeoIP data files referenced by torrc
-        if ($e.FullName -eq 'Data/Tor/geoip' -or $e.FullName -eq 'Data/Tor/geoip6') {
-            [System.IO.Compression.ZipFileExtensions]::ExtractToFile($e, (Join-Path $torDir $e.Name), $true)
-        }
+
+    # Locate tor.exe regardless of the bundle's internal folder layout
+    $torExe = Get-ChildItem -Path $torExtract -Recurse -Filter 'tor.exe' | Select-Object -First 1
+    if (-not $torExe) { throw 'tor.exe not found in the Tor expert bundle' }
+    Copy-Item (Join-Path $torExe.DirectoryName '*') $torDir -Recurse -Force
+
+    # GeoIP data files referenced by torrc
+    foreach ($name in 'geoip', 'geoip6') {
+        $f = Get-ChildItem -Path $torExtract -Recurse -Filter $name -File | Select-Object -First 1
+        if ($f) { Copy-Item $f.FullName (Join-Path $torDir $name) -Force }
     }
-    $zip.Dispose()
-    Write-Host "  tor.exe + DLLs + geoip data -> $torDir"
+    Write-Host "  tor.exe (Tor Browser $torVersion expert bundle) + DLLs + geoip data -> $torDir"
 
     Write-Host ''
     Write-Host 'Vendor binaries installed. Next: npm install   (Node dependencies)'

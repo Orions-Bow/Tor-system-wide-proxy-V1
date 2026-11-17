@@ -13,6 +13,12 @@ brew install tor
 brew install node
 ```
 
+Homebrew installs the current Tor release (0.4.9+ / Tor Browser 16 series). Keep it up to date — older Tor clients (e.g. 0.4.5.x) no longer work reliably with the current network consensus:
+
+```bash
+brew update && brew upgrade tor node
+```
+
 Then install the Node dependencies (declared in `package.json`, locked in `package-lock.json`; `node_modules` is not committed):
 
 ```bash

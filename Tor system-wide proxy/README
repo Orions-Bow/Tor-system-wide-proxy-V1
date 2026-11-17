@@ -18,7 +18,9 @@ npm install
 
 Sources (with SHA256 hashes embedded in the fetch script):
 - **Node.js** v24.22.2 (win-x64): `https://nodejs.org/dist/v24.22.2/node-v24.22.2-win-x64.zip`
-- **Tor** 0.4.5.7 (win32): `https://archive.torproject.org/tor-package-archive/torbrowser/10.0.15/tor-win32-0.4.5.7.zip`
+- **Tor** (Tor Browser **16.0.1** expert bundle, windows-x86_64): `https://dist.torproject.org/torbrowser/16.0.1/tor-expert-bundle-windows-x86_64-16.0.1.tar.gz`
+
+> **Upgrading:** re-run `scripts\fetch-vendor.ps1` at any time to (re)install or upgrade the vendored binaries. The old 0.4.5.7 bundle was deprecated by the Tor Project and no longer works reliably as a client; 16.x is required for the current network consensus.
 
 ## Quick Start
 

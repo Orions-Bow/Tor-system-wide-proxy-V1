@@ -20,7 +20,7 @@
     "node": ">=18"
   },
   "dependencies": {
-    "cli-color": "^2.0.0",
+    "cli-color": "^2.0.4",
     "tor-control": "0.0.3"
   }
 }
