@@ -1,5 +1,8 @@
 # Tor System-Wide Proxy
 
+[![Release](https://img.shields.io/github/v/release/Orions-Bow/Tor-system-wide-proxy-V1)](https://github.com/Orions-Bow/Tor-system-wide-proxy-V1/releases/latest)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 ![Tor System-Wide Proxy — interactive menu with Tor, bridge and proxy status](assets/menu-screenshot.png)
 
 Route your computer's **system-proxy traffic** through the [Tor](https://www.torproject.org/) anonymity network. This project runs a local Tor client, exposes a SOCKS5 proxy, and switches your operating system's proxy settings on and off — with an interactive menu and a scriptable CLI.
@@ -51,6 +54,22 @@ Each version is self-contained and can also be used/published on its own.
 | Tor / Node source | `scripts\fetch-vendor.ps1` (SHA256-verified download) | `brew install tor node` |
 | Launcher | `run.bat` | `run.sh` |
 
+## Download
+
+Get the latest build from the [Releases page](https://github.com/Orions-Bow/Tor-system-wide-proxy-V1/releases/latest):
+
+| Platform | Asset |
+|----------|-------|
+| Windows | `WINDOWS-ASSET.zip` |
+| macOS | `MACOS-ASSET.zip` |
+
+Unzip it, then follow the Quick start steps below. Prefer to build from source? Clone the repository instead.
+
+> **Release builds** already include `node_modules`, so you can skip `npm install`.
+> Windows: also skip `fetch-vendor.ps1`.
+> macOS: you still need Tor and Node installed (`brew install tor node`).
+> Building from source? Run the full Quick start below.
+
 ## Quick start
 
 ### Windows
@@ -92,6 +111,15 @@ Press **1** (start Tor), wait for `100%`. Run `sudo -v` once, then press **7** (
 - `AvoidDiskWrites 1` is set in `torrc` for extra privacy.
 - **Warning:** disabling Tor while the system proxy is still enabled breaks connectivity. The tool guards against this automatically, but if it is force-killed, run `proxy-off` to restore your connection.
 - This project is not affiliated with the Tor Project. Use Tor responsibly and read [Tor's safety guidance](https://www.torproject.org/download/download#warning).
+
+## Changelog
+
+### v2026-11-05 — 2026-11-17
+
+- First public release
+- RELEASE-HIGHLIGHTS
+
+See every version on the [Releases page](https://github.com/Orions-Bow/Tor-system-wide-proxy-V1/releases).
 
 ## License
 
